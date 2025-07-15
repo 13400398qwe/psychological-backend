@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.QuestionnaireQuestionsMapper">
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into questions (question_text, question_type,  is_crisis_indicator)
+        values
+        <foreach item="item" index="index" collection="questionnaireQuestionsList" separator=",">
+            (#{item.questionText}, #{item.questionType}, #{item.isCrisisIndicator})
+        </foreach>
+    </insert>
+</mapper>

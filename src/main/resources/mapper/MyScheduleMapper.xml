@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.MyScheduleMapper">
+
+    <select id="selectMySlotsPageForVisitor" resultType="com.example.scupsychological.pojo.vo.MyScheduleSlotVO">
+        SELECT
+        slot.id,
+        slot.start_time,
+        slot.end_time,
+        slot.location,
+        slot.status,
+        stu.id AS studentId,
+        stu.name AS studentName,
+        stu.username AS studentUsername,
+        stu.phone As studentPhone
+        FROM
+        schedule_slots slot
+        LEFT JOIN
+        initial_visit_applications app ON slot.id = app.schedule_slot_id AND app.status != 'CANCELED'
+        LEFT JOIN
+        users stu ON app.student_id = stu.id
+        WHERE
+        slot.staff_id = #{staffId}
+        AND slot.is_deleted = 0
+        <if test="query.status != null and query.status != ''">
+            AND slot.status = #{query.status}
+        </if>
+        <if test="query.startDate != null">
+            AND slot.start_time >= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND slot.start_time &lt;= #{query.endDate}
+        </if>
+        ORDER BY
+        slot.start_time ASC
+    </select>
+    <select id="selectMySlotsPageForCounselor" resultType="com.example.scupsychological.pojo.vo.MyScheduleSlotVO">
+        SELECT
+        slot.id,
+        slot.start_time AS startTime,
+        slot.end_time AS endTime,
+        slot.location,
+        slot.status,
+        stu.id AS studentId,
+        stu.name AS studentName,
+        stu.username AS studentUsername,
+        stu.phone AS studentPhone
+        FROM
+        schedule_slots slot
+        LEFT JOIN
+        counseling_sessions cs ON slot.id = cs.schedule_slot_id
+        LEFT JOIN
+        counseling_cases cc ON cs.case_id = cc.id
+        LEFT JOIN
+        users stu ON cc.student_id = stu.id
+        WHERE
+        -- 核心条件：只查询属于当前咨询师的号源
+        slot.staff_id = #{counselorId}
+        AND slot.is_deleted = 0
+        <!-- 动态拼接筛选条件 -->
+        <if test="query.status != null and query.status != ''">
+            AND slot.status = #{query.status}
+        </if>
+        <if test="query.startDate != null">
+            AND slot.start_time >= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND slot.start_time &lt;= #{query.endDate}
+        </if>
+        ORDER BY
+        slot.start_time ASC
+    </select>
+
+</mapper>

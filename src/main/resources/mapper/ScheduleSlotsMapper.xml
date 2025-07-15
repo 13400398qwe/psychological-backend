@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.ScheduleSlotsMapper">
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into schedule_slots (staff_id, start_time, end_time, location, status)
+        values
+        <foreach item="item" index="index" collection="slotList" separator=",">
+            (#{item.staffId},
+            #{item.startTime},
+            #{item.endTime},
+            #{item.location},
+            #{item.status})
+        </foreach>
+    </insert>
+    <update id="atomicallyBookSlot">
+        UPDATE schedule_slots
+        SET status = 'BOOKED'
+        WHERE id = #{slotId}
+          AND status = 'AVAILABLE'
+    </update>
+    <update id="atomicallyCancelBooking">
+        UPDATE schedule_slots
+        SET status = 'AVAILABLE'
+        WHERE id = #{slotId}
+          AND status = 'BOOKED'
+    </update>
+    <delete id="physicallyDeleteExpiredAvailableSlots">
+        DELETE
+        FROM schedule_slots
+        WHERE status = 'AVAILABLE'
+          AND start_time &lt; #{now}
+    </delete>
+    <!-- 新增的自定义查询 -->
+    <select id="selectAvailableInterviewerSlots" resultType="com.example.scupsychological.pojo.entity.ScheduleSlots">
+        SELECT
+        slot.*
+        FROM
+        schedule_slots slot
+        JOIN
+        users u ON slot.staff_id = u.id
+        WHERE
+        slot.is_deleted = false
+        AND
+        slot.status = 'AVAILABLE'
+        AND slot.start_time > NOW()
+        AND u.role = 'VISITOR' -- 核心：只筛选出角色为初访员的
+        <if test="query.staffId != null">
+            AND slot.staff_id = #{query.staffId}
+        </if>
+        <if test="query.queryDate != null">
+            AND slot.start_time >= #{query.queryDate} AND slot.start_time &lt; DATE_ADD(#{query.queryDate}, INTERVAL 1
+            DAY)
+        </if>
+        ORDER BY
+        slot.start_time ASC
+    </select>
+    <select id="selectAvailableCounselorSlots" resultType="com.example.scupsychological.pojo.entity.ScheduleSlots">
+        SELECT
+        slot.*
+        FROM
+        schedule_slots slot
+        JOIN
+        users u ON slot.staff_id = u.id
+        WHERE
+        slot.is_deleted = false
+        AND
+        slot.status = 'AVAILABLE'
+        AND slot.start_time > NOW()
+        AND u.role = 'COUNSELOR' -- 核心：只筛选出角色为初访员的
+        <if test="query.staffId != null">
+            AND slot.staff_id = #{query.staffId}
+        </if>
+        <if test="query.queryDate != null">
+            AND slot.start_time >= #{query.queryDate} AND slot.start_time &lt; DATE_ADD(#{query.queryDate}, INTERVAL 1
+            DAY)
+        </if>
+        ORDER BY
+        slot.start_time ASC
+    </select>
+    <update id="markSlotAsCompleted">
+        UPDATE schedule_slots
+        SET
+            status = 'COMPLETED'
+        WHERE
+            id = #{slotId} AND status = 'BOOKED'
+    </update>
+    <update id="atomicallyBookSlots">
+        UPDATE schedule_slots
+        SET
+        status = 'BOOKED'
+        WHERE
+        id IN
+        <foreach item="item" collection="slotIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND status = 'AVAILABLE'
+    </update>
+</mapper>

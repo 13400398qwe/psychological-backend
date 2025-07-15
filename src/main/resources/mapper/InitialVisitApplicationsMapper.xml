@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.InitialVisitApplicationsMapper">
+
+
+    <select id="selectApplicationDetailForInterviewer" resultType="com.example.scupsychological.pojo.vo.ApplicationInterviewerVO">
+        SELECT
+            app.id AS applicationId,
+            s.name AS studentName,
+            s.username AS studentUsername,
+            s.phone AS studentPhone,
+            slot.start_time AS scheduledTime,
+            slot.location,
+            app.status,
+            app.is_urgent AS isUrgent
+        FROM
+            initial_visit_applications app
+                JOIN
+            users s ON app.student_id = s.id
+                LEFT JOIN
+            schedule_slots slot ON app.schedule_slot_id = slot.id
+        WHERE
+            app.id = #{applicationId}
+          AND app.assigned_interviewer_id = #{interviewerId}
+          AND app.is_deleted = 0
+    </select>
+
+</mapper>

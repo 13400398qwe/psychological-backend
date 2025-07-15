@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.UsersMapper">
+    <select id="selectByUsernameXml" resultType="java.lang.Boolean">
+        select count(0) from users where username = #{username}
+    </select>
+    <update id="updateByUsernamexml" parameterType="com.example.scupsychological.pojo.entity.Users">
+        update users
+        set password   = #{password},
+            name       = #{name},
+            role       = #{role},
+            avatar     = #{avatar},
+            phone      = #{phone},
+            gender     = #{gender},
+            college    = #{college},
+            is_deleted = #{isDeleted}
+        where username  = #{username}
+    </update>
+</mapper>

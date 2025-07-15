@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.CounselingCasesMapper">
+    <select id="selectPendingCases" resultType="com.example.scupsychological.pojo.vo.PendingCaseVO">
+        SELECT ivr.id           AS initialVisitRecordId,
+               u.id             AS studentId,
+               u.name           AS studentName,
+               u.username       AS studentUsername,
+               ivr.crisis_level AS crisisLevel,
+               ivr.problem_type AS problemType,
+               ivr.notes        AS interviewerNotes
+        FROM initial_visit_records ivr
+                 JOIN
+             initial_visit_applications iva ON ivr.application_id = iva.id
+                 JOIN
+             users u ON iva.student_id = u.id
+        WHERE ivr.conclusion = 'ARRANGE_COUNSELING'
+          AND NOT EXISTS (SELECT 1 FROM counseling_cases cc WHERE cc.initial_visit_record_id = ivr.id)
+        ORDER BY
+            -- 可以根据危机等级进行排序，让高危的排在前面
+            FIELD(ivr.crisis_level, '高', '中', '低'),
+            ivr.created_at ASC
+    </select>
+    <select id="selectCasesForCounselor" resultType="com.example.scupsychological.pojo.vo.CounselorCaseListVO">
+        SELECT
+        c.id AS caseId,
+        u.name AS studentName,
+        u.username AS studentUsername,
+        c.status,
+        -- 【核心修正】使用 IFNULL 来处理 total_sessions 可能为 NULL 的情况
+        CONCAT(
+        (SELECT COUNT(*) FROM counseling_sessions WHERE case_id = c.id AND status != 'PENDING'),
+        '/',
+        IFNULL(c.total_sessions, 0)
+        ) AS sessionProgress,
+        (SELECT MIN(start_time) FROM counseling_sessions WHERE case_id = c.id AND status = 'PENDING' AND start_time >=
+        NOW()) AS nextSessionTime
+        FROM
+        counseling_cases c
+        JOIN
+        users u ON c.student_id = u.id
+        <where>
+            c.is_deleted = 0
+            AND c.counselor_id = #{counselorId}
+            <if test="query.studentKeyword != null and query.studentKeyword != ''">
+                AND (u.name LIKE CONCAT('%', #{query.studentKeyword}, '%') OR u.username LIKE CONCAT('%',
+                #{query.studentKeyword}, '%'))
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND c.status = #{query.status}
+            </if>
+        </where>
+        ORDER BY
+        FIELD(c.status, 'IN_PROGRESS', 'AWAITING_EXTENSION_APPROVAL', 'CLOSED', 'DROPPED_OUT'),
+        c.created_at DESC
+    </select>
+
+    <select id="selectCaseDetailForCounselor" resultType="com.example.scupsychological.pojo.vo.CounselorCaseDetailVO">
+        SELECT
+            c.id AS caseId,
+            u.name AS studentName,
+            u.username AS studentUsername,
+            u.phone AS studentPhone,
+            c.status,
+            c.total_sessions AS totalSessions,
+            ivr.problem_type AS problemType,
+            c.report_content AS reportContent
+        FROM
+            counseling_cases c
+                JOIN
+            users u ON c.student_id = u.id
+                LEFT JOIN
+            initial_visit_records ivr ON c.initial_visit_record_id = ivr.id
+        WHERE
+            c.id = #{caseId}
+          AND c.counselor_id = #{counselorId} -- 核心安全校验
+          AND c.is_deleted = 0
+    </select>
+    <select id="calculateCounselorWorkload" resultType="com.example.scupsychological.pojo.vo.CounselorWorkloadVO">
+        SELECT
+            c.name AS counselorName,
+            COUNT(s.id) AS totalCompletedSessions,
+            SUM(TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time)) AS totalMinutes
+        FROM
+            counseling_sessions s
+                JOIN
+            counseling_cases cs ON s.case_id = cs.id
+                JOIN
+            users c ON cs.counselor_id = c.id
+        WHERE
+            s.status = 'COMPLETED'
+        GROUP BY
+            c.id, c.name
+        ORDER BY
+            totalCompletedSessions DESC
+    </select>
+    <!-- 新增的、为助理设计的查询 -->
+    <select id="selectMyCasesForAssistant" resultType="com.example.scupsychological.pojo.vo.CaseAssistantListVO">
+        SELECT
+        c.id AS caseId,
+        student.name AS studentName,
+        student.phone AS studentPhone,
+        counselor.phone AS counselorPhone,
+        counselor.name AS counselorName,
+        c.created_at AS createdAt,
+        c.status,
+        CONCAT(
+        (SELECT COUNT(*) FROM counseling_sessions WHERE case_id = c.id AND status = 'COMPLETED'),
+        '/',
+        c.total_sessions
+        ) AS sessionProgress,
+        (SELECT MIN(start_time) FROM counseling_sessions WHERE case_id = c.id AND status = 'PENDING' AND start_time >= NOW()) AS nextSessionTime
+        FROM
+        counseling_cases c
+        LEFT JOIN
+        users student ON c.student_id = student.id
+        LEFT JOIN
+        users counselor ON c.counselor_id = counselor.id
+        <where>
+            c.is_deleted = 0
+            <!-- 核心条件：只查询 assistant_id 是当前登录助理的个案 -->
+            AND c.assistant_id = #{assistantId}
+
+            <!-- 动态拼接筛选条件 -->
+            <if test="query.studentKeyword != null and query.studentKeyword != ''">
+                AND (student.name LIKE CONCAT('%', #{query.studentKeyword}, '%') OR student.username LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+            </if>
+            <if test="query.counselorName != null and query.counselorName != ''">
+                AND counselor.name LIKE CONCAT('%', #{query.counselorName}, '%')
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND c.status = #{query.status}
+            </if>
+        </where>
+        ORDER BY
+        FIELD(c.status, 'IN_PROGRESS', 'AWAITING_EXTENSION_APPROVAL', 'CLOSED', 'DROPPED_OUT'),
+        c.created_at DESC
+    </select>
+    <select id="selectClosedCaseSummaries" resultType="com.example.scupsychological.pojo.vo.CaseReportSummaryVO">
+        SELECT
+        cc.id AS caseId,
+        student.name AS studentName,
+        student.username AS studentUsername,
+        student.college AS studentCollege,
+        counselor.name AS counselorName,
+        student.phone AS studentPhone,
+        counselor.college AS counselorCollege,
+        counselor.phone AS counselorPhone,
+        ivr.problem_type AS problemType,
+        cc.status,
+        cc.report_finalized_at AS reportFinalizedAt
+        FROM
+        counseling_cases cc
+        LEFT JOIN
+        users student ON cc.student_id = student.id
+        LEFT JOIN
+        users counselor ON cc.counselor_id = counselor.id
+        LEFT JOIN
+        initial_visit_records ivr ON cc.initial_visit_record_id = ivr.id
+        <where>
+            cc.is_deleted = 0
+            AND cc.status IN ('CLOSED', 'DROPPED_OUT')
+            <if test="query.studentKeyword != null and query.studentKeyword != ''">
+                AND (student.name LIKE CONCAT('%', #{query.studentKeyword}, '%') OR student.username LIKE CONCAT('%',
+                #{query.studentKeyword}, '%'))
+            </if>
+            <if test="query.counselorName != null and query.counselorName != ''">
+                AND counselor.name LIKE CONCAT('%', #{query.counselorName}, '%')
+            </if>
+            <if test="query.problemType != null and query.problemType != ''">
+                AND ivr.problem_type = #{query.problemType}
+            </if>
+            <if test="query.startDate != null">
+                AND cc.report_finalized_at >= #{query.startDate}
+            </if>
+            <if test="query.endDate != null">
+                AND cc.report_finalized_at &lt;= #{query.endDate}
+            </if>
+        </where>
+        ORDER BY
+        cc.report_finalized_at DESC
+    </select>
+    <select id="getCaseReportContent" resultType="com.example.scupsychological.pojo.vo.CaseReportContentVO">
+        SELECT
+            report_content AS reportContent,
+            id AS caseId
+        FROM
+            counseling_cases
+        WHERE
+            counselor_id = #{userId}
+        AND status='CLOSED'
+    </select>
+    <select id="selectAllClosedCaseDetails" resultType="com.example.scupsychological.pojo.vo.CounselorCaseDetailVO">
+        SELECT
+        cc.id AS caseId,
+        student.name AS studentName,
+        student.username AS studentUsername,
+        student.phone AS studentPhone,
+        cc.status,
+        cc.total_sessions AS totalSessions,
+        ivr.problem_type AS problemType,
+        cc.report_content AS reportContent
+        FROM
+        counseling_cases cc
+        LEFT JOIN
+        users student ON cc.student_id = student.id
+        LEFT JOIN
+        users counselor ON cc.counselor_id = counselor.id
+        LEFT JOIN
+        initial_visit_records ivr ON cc.initial_visit_record_id = ivr.id
+        <where>
+            cc.is_deleted = 0
+            AND cc.status IN ('CLOSED', 'DROPPED_OUT')
+
+            <if test="query.studentKeyword != null and query.studentKeyword != ''">
+                AND (student.name LIKE CONCAT('%', #{query.studentKeyword}, '%') OR student.username LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+            </if>
+            <if test="query.counselorName != null and query.counselorName != ''">
+                AND counselor.name LIKE CONCAT('%', #{query.counselorName}, '%')
+            </if>
+            <if test="query.problemType != null and query.problemType != ''">
+                AND ivr.problem_type = #{query.problemType}
+            </if>
+            <if test="query.startDate != null">
+                AND DATE(cc.report_finalized_at) >= #{query.startDate}
+            </if>
+            <if test="query.endDate != null">
+                AND DATE(cc.report_finalized_at) &lt;= #{query.endDate}
+            </if>
+        </where>
+        ORDER BY
+        cc.report_finalized_at DESC
+    </select>
+</mapper>

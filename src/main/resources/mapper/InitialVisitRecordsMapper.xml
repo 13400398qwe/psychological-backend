@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.InitialVisitRecordsMapper">
+    <select id="selectRecordsByInterviewer" resultType="com.example.scupsychological.pojo.vo.VisitRecordInterviewerVO">
+        SELECT
+        ivr.id AS recordId,
+        ivr.application_id AS applicationId,
+        u.name AS studentName,
+        u.username AS studentUsername,
+        u.phone AS studentPhone,
+        ivr.visit_time AS visitTime,
+        ivr.crisis_level AS crisisLevel,
+        ivr.problem_type AS problemType,
+        ivr.conclusion,
+        ivr.created_at AS createdAt
+        FROM
+        initial_visit_records ivr
+        JOIN
+        initial_visit_applications iva ON ivr.application_id = iva.id
+        JOIN
+        users u ON iva.student_id = u.id
+        WHERE
+        -- 核心条件：申请表中的指派初访员ID必须是当前登录的初访员
+        iva.assigned_interviewer_id = #{interviewerId}
+        <if test="query.studentKeyword != null and query.studentKeyword != ''">
+            AND (u.name LIKE CONCAT('%', #{query.studentKeyword}, '%') OR u.username LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+        </if>
+        <if test="query.conclusion != null and query.conclusion != ''">
+            AND ivr.conclusion = #{query.conclusion}
+        </if>
+        ORDER BY
+        ivr.created_at DESC
+    </select>
+    <select id="selectRecordsForAdmin" resultType="com.example.scupsychological.pojo.vo.InitialVisitRecordAdminVO">
+        SELECT
+        ivr.id AS recordId,
+        iva.id AS applicationId,
+        student.name AS studentName,
+        student.username AS studentUsername,
+        student.phone AS studentPhone,
+        interviewer.name AS interviewerName,
+        ivr.visit_time AS visitTime,
+        ivr.crisis_level AS crisisLevel,
+        ivr.problem_type AS problemType,
+        ivr.conclusion
+        FROM
+        initial_visit_records ivr
+        JOIN
+        initial_visit_applications iva ON ivr.application_id = iva.id
+        JOIN
+        users student ON iva.student_id = student.id
+        LEFT JOIN
+        users interviewer ON iva.assigned_interviewer_id = interviewer.id
+        <where>
+            <if test="query.studentKeyword != null and query.studentKeyword != ''">
+                AND (student.name LIKE CONCAT('%', #{query.studentKeyword}, '%') OR student.username LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+            </if>
+            <if test="query.interviewerName != null and query.interviewerName != ''">
+                AND interviewer.name LIKE CONCAT('%', #{query.interviewerName}, '%')
+            </if>
+            <if test="query.conclusion != null and query.conclusion != ''">
+                AND ivr.conclusion = #{query.conclusion}
+            </if>
+            <if test="query.startDate != null">
+                AND ivr.visit_time >= #{query.startDate}
+            </if>
+            <if test="query.endDate != null">
+                AND ivr.visit_time &lt;= DATE_ADD(#{query.endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+        ORDER BY
+        ivr.visit_time DESC
+    </select>
+</mapper>

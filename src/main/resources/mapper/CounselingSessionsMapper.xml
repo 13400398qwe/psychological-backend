@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.CounselingSessionsMapper">
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO counseling_sessions
+        (case_id,schedule_slot_id,session_number, start_time, end_time, location, status, created_at, updated_at)
+        VALUES
+        <foreach collection="sessionsToCreate" item="session" separator=",">
+            (
+            #{session.caseId},
+            #{session.scheduleSlotId},
+            #{session.sessionNumber},
+            #{session.startTime},
+            #{session.endTime},
+            #{session.location},
+            #{session.status},
+
+            -- 我们在这里直接使用数据库的 NOW() 函数来设置时间戳，是最佳实践
+            NOW(),
+            NOW()
+            )
+        </foreach>
+    </insert>
+</mapper>

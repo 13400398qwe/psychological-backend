@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scupsychological.mapper.CaseExtensionRequestMapper">
+
+    <select id="selectPendingRequests" resultType="com.example.scupsychological.pojo.vo.PendingExtensionRequestVO">
+        SELECT
+        req.id AS requestId,
+        req.case_id AS caseId,
+        student.name AS studentName,
+        counselor.name AS counselorName,
+        req.requested_sessions AS requestedSessions,
+        req.reason,
+        req.created_at AS createdAt
+        FROM
+        case_extension_requests req
+        JOIN
+        counseling_cases cc ON req.case_id = cc.id
+        JOIN
+        users student ON cc.student_id = student.id
+        JOIN
+        users counselor ON req.counselor_id = counselor.id
+        <where>
+            -- 核心条件：只查询待审批的
+            req.status = 'PENDING'
+            <!-- 动态拼接筛选条件 -->
+            <if test="query.studentKeyword != null and query.studentKeyword != ''">
+                AND (student.name LIKE CONCAT('%', #{query.studentKeyword}, '%') OR student.username LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+            </if>
+            <if test="query.counselorName != null and query.counselorName != ''">
+                AND counselor.name LIKE CONCAT('%', #{query.counselorName}, '%')
+            </if>
+        </where>
+        ORDER BY
+        req.created_at ASC
+    </select>
+
+</mapper>

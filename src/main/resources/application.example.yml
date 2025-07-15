@@ -1,0 +1,80 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/psychological?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root # 替换为你的数据库用户名
+    password: 134398 # 替换为你的数据库密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  application:
+    name: ScupsychologicalApplication
+  # 邮箱配置
+  mail:
+    host: smtp.qq.com # 以QQ邮箱为例
+    port: 587
+    username: *****@**.com # 你的邮箱地址
+    password: 自己申请 # 邮箱授权码，不是登录密码
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+mybatis-plus:
+  # Mapper XML 文件的位置 (如果你打算用XML写复杂SQL)
+  mapper-locations: classpath:/mapper/**/*.xml
+  # 实体类所在的包
+  type-aliases-package: com.example.counseling.entity
+  configuration:
+    # 开启驼峰命名转换: an_initial_visit -> anInitialVisit
+    map-underscore-to-camel-case: true
+    # 日志实现，方便在控制台查看执行的 SQL
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      # 逻辑删除的全局值（1 表示已删除，0 表示未删除）
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+springdoc:
+  api-docs:
+    enabled: true # 开启OpenApi接口
+    path: /v3/api-docs  # 自定义路径，默认为 "/v3/api-docs"
+  swagger-ui:
+    enabled: true # 开启swagger界面，依赖OpenApi，需要OpenApi同时开启
+    path: /swagger-ui/index.html # 自定义路径，默认为"/swagger-ui/index.html"
+jwt:
+  secret-key: "ThisIsMySuperLongAndVerySecureSecretKeyForScupsychologicalProject2025"
+  expiration-millis: 604800000
+  issuer: "scupsychological-app"
+aliyun:
+  oss:
+    endpoint: 阿里云终端
+    access-key-id: aliyunid #自己申请
+    access-key-secret: 密钥 #自己的
+    bucket-name: bucket名称
+  sms:
+    # 您的阿里云访问密钥
+    access-key-id: aliyunid #自己申请
+    access-key-secret: 密钥 #自己的
+    # 您申请并通过审核的短信签名
+    sign-name: "心理咨询平台"
+    # 您申请并通过审核的模板CODE
+    template-code:
+      # 可以为不同的场景配置不同的模板
+      register: "自己申请的模板"
+      notify: "自己申请的短信模板"
+app:
+  # 默认头像配置
+  default-avatars:
+    # 基础 URL (不包含最后的文件名和后缀)
+    base-url: "存储的域名"
+    # 默认头像的总数量
+    count: 1
+    # 文件后缀名
+    extension: ".png"
