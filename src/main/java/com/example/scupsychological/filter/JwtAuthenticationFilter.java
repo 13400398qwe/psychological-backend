@@ -40,17 +40,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
-        // 1. 从 HTTP 请求头中获取 Token
-        String authHeader = request.getHeader("Authorization");
+        String token = null;
 
-        // 如果请求头为空，或者不以 "Bearer " 开头，说明这个请求没有携带有效的 Token，直接放行。
-        // 后续的 Spring Security 过滤器会处理这种情况（通常会判定为未认证）。
-        if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
+        // 1. 首先尝试从请求头获取 Token
+        String authHeader = request.getHeader("Authorization");
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+
+        // 2. 如果请求头中没有，则尝试从查询参数获取 (为了兼容SSE)
+        if (!StringUtils.hasText(token)) {
+            token = request.getParameter("token");
+        }
+
+        // 如果最终还是没有 token，则直接放行
+        if (!StringUtils.hasText(token)) {
             filterChain.doFilter(request, response);
             return;
         }
-        // 2. 提取 Token 字符串 (去掉 "Bearer " 前缀)
-        String token = authHeader.substring(7);
 
         // 3. 使用 JwtUtil 校验 Token 并解析出 Claims
         Claims claims = jwtUtil.validateAndParseToken(token);

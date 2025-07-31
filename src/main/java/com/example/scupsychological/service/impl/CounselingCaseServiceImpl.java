@@ -10,7 +10,6 @@ import com.example.scupsychological.pojo.dto.CaseScheduleDto;
 import com.example.scupsychological.pojo.entity.*;
 import com.example.scupsychological.pojo.vo.*;
 import com.example.scupsychological.service.CounselingCaseService;
-import com.example.scupsychological.service.NotificationService;
 import com.example.scupsychological.utils.WordGeneratorUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -42,7 +41,6 @@ public class CounselingCaseServiceImpl implements CounselingCaseService {
     private final InitialVisitApplicationsMapper applicationMapper;
     private final ObjectMapper objectMapper;
     private final WordGeneratorUtil wordGeneratorUtil;
-    private final NotificationService notificationService;
     private static final int COUNSELING_SESSION_DURATION_MINUTES = 60;
 
     @Override

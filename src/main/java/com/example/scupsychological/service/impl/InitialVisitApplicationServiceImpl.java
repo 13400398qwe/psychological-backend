@@ -1,23 +1,17 @@
 package com.example.scupsychological.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.scupsychological.common.enums.Role;
 import com.example.scupsychological.common.exception.BaseException;
 import com.example.scupsychological.mapper.InitialVisitApplicationsMapper;
 import com.example.scupsychological.mapper.QuestionsMapper;
 import com.example.scupsychological.mapper.ScheduleSlotsMapper;
 import com.example.scupsychological.mapper.UsersMapper;
 import com.example.scupsychological.pojo.dto.*;
-import com.example.scupsychological.pojo.entity.InitialVisitApplications;
-import com.example.scupsychological.pojo.entity.Questions;
-import com.example.scupsychological.pojo.entity.ScheduleSlots;
-import com.example.scupsychological.pojo.entity.Users;
+import com.example.scupsychological.pojo.entity.*;
 import com.example.scupsychological.pojo.vo.ApplicationDetailVO;
 import com.example.scupsychological.pojo.vo.ApplicationListVO;
 import com.example.scupsychological.pojo.vo.EvaluationResult;
-import com.example.scupsychological.pojo.vo.QuestionnaireEvaluationResult;
 import com.example.scupsychological.service.InitialVisitApplicationService;
 import com.example.scupsychological.service.NotificationService;
 import com.example.scupsychological.service.QuestionnaireService;
@@ -47,10 +41,10 @@ public class InitialVisitApplicationServiceImpl implements InitialVisitApplicati
     private final InitialVisitApplicationsMapper applicationsMapper;
     private final UsersMapper usersMapper;
     private final ScheduleSlotsMapper scheduleSlotsMapper;
-    private final NotificationService notificationService;
     private final QuestionsMapper questionsMapper;
     private final ScheduleSlotsMapper slotMapper;
     private final ScheduleService scheduleService;
+    private final NotificationService notificationService;
     // ... 其他 Mapper 和 Service
 
     @Transactional
@@ -80,6 +74,8 @@ public class InitialVisitApplicationServiceImpl implements InitialVisitApplicati
         if (!scheduleService.bookSlot(createDto.getScheduleSlotId())) {
             throw new BaseException("手速慢了一点，预约失败");
         }
+        //通知中心管理员审批
+        notificationService.createAndSendNotification(1L, "有新的初访申请待处理", "APPLICATION_REVIEW");
     }
 
     private String createQuestionnaireSnapshot(@NotNull(message = "问卷答案不能为空") Map<Long, Long> answers) {
@@ -153,7 +149,7 @@ public class InitialVisitApplicationServiceImpl implements InitialVisitApplicati
         applicationsMapper.updateById(application);
         //如果审核通过发送短信
         if ("APPROVED".equals(decision)) {
-            notificationService.sendAppointmentApprovedSmsToStudent(usersMapper.selectById(application.getStudentId()), usersMapper.selectById(application.getAssignedInterviewerId()));
+            //notificationService.sendAppointmentApprovedSmsToStudent(usersMapper.selectById(application.getStudentId()), usersMapper.selectById(application.getAssignedInterviewerId()));
         }
 
         // 4. 查询并返回更新后的完整视图对象
@@ -269,7 +265,7 @@ public class InitialVisitApplicationServiceImpl implements InitialVisitApplicati
 
         // 5. 保存到数据库
         applicationsMapper.insert(application);
-        notificationService.sendAppointmentApprovedSmsToStudent(student, usersMapper.selectById(slot.getStaffId()));
+        //notificationService.sendAppointmentApprovedSmsToStudent(student, usersMapper.selectById(slot.getStaffId()));
         // 6. 组装详细的VO并返回
         return buildDetailVO(application);
     }
