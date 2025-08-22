@@ -12,16 +12,16 @@
 
 1.  [项目概述](#项目概述)
 2.  [核心功能](#核心功能)
-3.  [技术栈](https://www.google.com/search?q=%23%E6%8A%80%E6%9C%AF%E6%A0%88)
-4.  [模块详解](https://www.google.com/search?q=%23%E6%A8%A1%E5%9D%97%E8%AF%A6%E8%A7%A3)
-      * [通用模块](https://www.google.com/search?q=%23%E9%80%9A%E7%94%A8%E6%A8%A1%E5%9D%97)
-      * [学生模块](https://www.google.com/search?q=%23%E5%AD%A6%E7%94%9F%E6%A8%A1%E5%9D%97)
-      * [初访员模块](https://www.google.com/search?q=%23%E5%88%9D%E8%AE%BF%E5%91%98%E6%A8%A1%E5%9D%97)
-      * [咨询师模块](https://www.google.com/search?q=%23%E5%92%A8%E8%AF%A2%E5%B8%88%E6%A8%A1%E5%9D%97)
-      * [心理助理模块](https://www.google.com/search?q=%23%E5%BF%83%E7%90%86%E5%8A%A9%E7%90%86%E6%A8%A1%E5%9D%97)
-      * [后台管理模块](https://www.google.com/search?q=%23%E5%90%8E%E5%8F%B0%E7%AE%A1%E7%90%86%E6%A8%A1%E5%9D%97)
-5.  [数据库设计](https://www.google.com/search?q=%23%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1)
-6.  [环境搭建与配置指南](https://www.google.com/search?q=%23%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E4%B8%8E%E9%85%8D%E7%BD%AE%E6%8C%87%E5%8D%97)
+3.  [技术栈](#技术栈)
+4.  [模块详解](#模块详解)
+      * [通用模块](#通用模块)
+      * [学生模块](#学生模块)
+      * [初访员模块](#初访员模块)
+      * [咨询师模块](#咨询师模块)
+      * [心理助理模块](#心理助理模块)
+      * [后台管理模块](#后台管理模块)
+5.  [数据库设计](#数据库设计)
+6.  [环境搭建与配置指南](#环境搭建与配置指南)
 
 -----
 
